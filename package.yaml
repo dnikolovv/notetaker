@@ -1,0 +1,60 @@
+name:                notetaker
+version:             0.1.0.0
+github:              "gfarrell/notetaker"
+license:             BSD3
+author:              "Gideon Farrell"
+maintainer:          "gideon@gtf.io"
+copyright:           "2022 Gideon Farrell"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/gfarrell/notetaker#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- aeson
+- bytestring
+- directory
+- either
+- mustache
+- mtl
+- parsec
+- servant-server
+- text
+- time
+- transformers
+- warp
+
+library:
+  source-dirs: src
+
+executables:
+  notetaker-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - notetaker
+
+tests:
+  notetaker-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - notetaker
