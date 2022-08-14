@@ -24,6 +24,7 @@ source-repository head
 
 library
   exposed-modules:
+      Http.Handlers
       Http.Server
       Processor.Config
       Processor.Errors

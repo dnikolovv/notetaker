@@ -23,6 +23,8 @@ import System.FilePath.Posix ((</>), takeExtension, dropExtension)
 
 type Processor = ExceptT ProcessingFailure IO
 
+outputDir = getCurrentDirectory
+
 useConfig :: ProcessorConfig -> NoteProcessor
 useConfig c n =
     writeNote n >>= \notefile -> do
@@ -36,7 +38,7 @@ useConfig c n =
         <&> mapBoth (const FileAccessFailure) (const file)
 
     getNonconflictingPathForFile n = do
-      cwd <- getCurrentDirectory
+      cwd <- outputDir
       let canonical = cwd </> destinationDirectory c </> createNoteName c n
           basename = dropExtension canonical
           extension = takeExtension canonical
@@ -51,12 +53,12 @@ useConfig c n =
     writeIndexFile :: FilePath -> Processor ()
     writeIndexFile n = do
       cwd <- liftIO getCurrentDirectory
-      noteFiles <- liftIO $ listDirectory ("./" ++ destinationDirectory c)
+      noteFiles <- liftIO $ listDirectory (cwd </> destinationDirectory c)
                       <&> filter (/= indexFile c)
       template <- withExceptT (const IndexTemplateParseFailure)
                     $ compileIndexFile (indexTemplate c)
       let content = generateIndexContent template noteFiles
-          indexFP = cwd ++ "/" ++ destinationDirectory c ++ "/" ++ indexFile c
+          indexFP = cwd </> destinationDirectory c </> indexFile c
       liftIO . putStrLn $ "writing index file to " ++ indexFP ++ " with notes " ++ show noteFiles
       ExceptT $ (try (TextIO.writeFile indexFP content) :: IO (Either IOError ()))
         <&> mapBoth (const IndexCreationFailure) (const ())
@@ -68,7 +70,6 @@ initConfigs = mapM initConfig
                      . destinationDirectory
 
 processNote :: [ProcessorConfig] -> NoteProcessor
-processNote ps n = let xs = filter ((== noteRecipient n) . incomingAddress) ps
-                    in (case xs of
-                        []    -> ExceptT . return . Left $ NoMatchingProcessor
-                        (x:_) -> useConfig x n)
+processNote ps n = case filter ((== noteRecipient n) . incomingAddress) ps of
+                      []    -> ExceptT . return . Left $ NoMatchingProcessor
+                      (x:_) -> useConfig x n
