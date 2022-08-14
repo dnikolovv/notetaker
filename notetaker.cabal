@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           notetaker
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/gfarrell/notetaker#readme>
+description:    Please see the README at <https://sr.ht/~gtf/notetaker>
 homepage:       https://github.com/gfarrell/notetaker#readme
 bug-reports:    https://github.com/gfarrell/notetaker/issues
 author:         Gideon Farrell
@@ -17,7 +17,6 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
 
 source-repository head
   type: git
@@ -43,6 +42,7 @@ library
     , bytestring
     , directory
     , either
+    , filepath
     , mtl
     , mustache
     , parsec
@@ -66,6 +66,7 @@ executable notetaker-exe
     , bytestring
     , directory
     , either
+    , filepath
     , mtl
     , mustache
     , notetaker
@@ -91,6 +92,7 @@ test-suite notetaker-test
     , bytestring
     , directory
     , either
+    , filepath
     , mtl
     , mustache
     , notetaker

@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Processor.Process (
   processNote
 , initConfigs
@@ -16,7 +18,8 @@ import Processor.Note (Note (..), NoteProcessor)
 import Processor.Errors (ProcessingFailure (..))
 import Processor.IndexFile (generateIndexContent, compileIndexFile)
 
-import System.Directory (listDirectory, createDirectoryIfMissing, getCurrentDirectory)
+import System.Directory (listDirectory, createDirectoryIfMissing, getCurrentDirectory, doesFileExist)
+import System.FilePath.Posix ((</>), takeExtension, dropExtension)
 
 type Processor = ExceptT ProcessingFailure IO
 
@@ -28,10 +31,22 @@ useConfig c n =
   where
     writeNote :: NoteProcessor
     writeNote n = do
-      cwd <- liftIO getCurrentDirectory
-      let file = cwd ++ "/" ++ destinationDirectory c ++ "/" ++ createNoteName c n
+      file <- liftIO . getNonconflictingPathForFile $ n
       ExceptT $ (try (TextIO.writeFile file . noteContents $ n) :: IO (Either IOError ()))
         <&> mapBoth (const FileAccessFailure) (const file)
+
+    getNonconflictingPathForFile n = do
+      cwd <- getCurrentDirectory
+      let canonical = cwd </> destinationDirectory c </> createNoteName c n
+          basename = dropExtension canonical
+          extension = takeExtension canonical
+      findGoodPath basename extension 0
+      where findGoodPath b e i =
+              let newPath = fname b e i
+               in doesFileExist newPath >>= \case True -> findGoodPath b e (i + 1)
+                                                  False -> return newPath
+            fname b e 0 = b ++ e
+            fname b e i = b ++ " (" ++ show i ++ ")" ++ e
 
     writeIndexFile :: FilePath -> Processor ()
     writeIndexFile n = do

@@ -33,4 +33,4 @@ compileIndexFile inputFile = do
 generateIndexContent :: Template -> [FilePath] -> Text
 generateIndexContent t notes =
     substituteValue t (object [ "notes" ~> map mk notes ])
-    where mk n = object [ "path" ~> show n ]
+    where mk n = object [ "path" ~> n ]
