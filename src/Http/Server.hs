@@ -12,72 +12,22 @@ module Http.Server (
 
 import Control.Applicative ((<*>))
 
-import Data.Aeson (FromJSON (..), (.:), withObject, Object)
-import Data.Aeson.Types (Parser)
-import Data.Aeson.Key (fromString)
-import Data.Text (Text)
-import Data.ByteString.Char8 (ByteString, pack)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Except (withExceptT)
-import Data.Either (either)
-import Data.Time.Clock (getCurrentTime)
-import Data.Functor ((<&>))
-
 import Servant ((:>))
 import qualified Servant as S
 import Network.Wai.Handler.Warp (run)
 
-import Http.Handlers (ToHandler (toHandler))
-import Processor.Types (EmailAddress, Processor)
-import Processor.Note (Note (Note), NoteProcessor)
-import Processor.Errors (ProcessingFailure (..))
+import Http.Handlers (mailgunMessageHandler, MailgunEmailBody)
+import Processor.Types (Processor)
+import Processor.Note (Note (Note))
 import Processor.Process (processNote)
 
-data MailgunEmailBody = MailgunEmailBody {
-  _recipient :: EmailAddress
-, _from :: EmailAddress
-, _subject :: Text
-, _bodyPlain :: Text
-, _attachments :: [ByteString]
-} deriving Show
+type API = "mailgun" :> S.ReqBody '[S.JSON] MailgunEmailBody
+                     :> S.Post '[S.JSON] ()
 
-instance FromJSON MailgunEmailBody where
-  parseJSON = withObject "Body" (\v ->
-                MailgunEmailBody <$> v .: "recipient"
-                                 <*> v .: "from"
-                                 <*> v .: "subject"
-                                 <*> v .: "body-plain"
-                                 <*> ((v .: "attachment-count") >>= \c -> extractAttachments 1 c v))
-    where extractAttachments :: Int -> Int -> Object -> Parser [ByteString]
-          extractAttachments _ 0 _ = return []
-          extractAttachments c r v = do
-            x <- v .: fromString ("attachment-" ++ show c)
-            xs <- extractAttachments (c + 1) (r - 1) v
-            return (pack x : xs)
+api :: S.Proxy API
+api = S.Proxy
 
-type MailgunAPI = "mailgun" :> S.ReqBody '[S.JSON] MailgunEmailBody
-                            :> S.Post '[S.JSON] FilePath
-
-mailgunAPI :: S.Proxy MailgunAPI
-mailgunAPI = S.Proxy
-
-mailgunMessageHandler :: NoteProcessor -> MailgunEmailBody -> S.Handler FilePath
-mailgunMessageHandler f b = do
-    n <- liftIO (makeNoteFromBody b)
-    toHandler (f n)
-  where
-    makeNoteFromBody b = getCurrentTime <&> \t ->
-      Note (_from b)
-        (_recipient b)
-        t
-        (_subject b)
-        (_bodyPlain b)
-        (_attachments b)
-
-makeHandler :: NoteProcessor -> S.Server MailgunAPI
-makeHandler = mailgunMessageHandler
-
-app :: NoteProcessor -> S.Application
-app = S.serve mailgunAPI . makeHandler
+app :: (Note -> Processor ()) -> S.Application
+app = S.serve api . mailgunMessageHandler
 
 runServer ps = run 8080 $ app (processNote ps)

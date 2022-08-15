@@ -13,11 +13,13 @@ module Processor.IndexFile (
 import Data.Text (Text)
 import Text.Mustache (Template, object, (~>))
 import Text.Mustache.Compile (automaticCompile)
-import Text.Mustache.Render (substituteValue)
+import Text.Mustache.Render (checkedSubstituteValue)
 import Text.Parsec (ParseError)
 import Control.Monad.Trans.Except (ExceptT (..))
 import Control.Monad.IO.Class (liftIO)
 import System.Directory (getCurrentDirectory)
+
+import Processor.Errors (ProcessingFailure (..))
 
 type IndexTemplate = FilePath
 
@@ -30,7 +32,9 @@ compileIndexFile inputFile = do
                                (cwd ++ "/templates/" ++ inputFile)
 
 -- | Generate index content from index file data and a list of notes
-generateIndexContent :: Template -> [FilePath] -> Text
+generateIndexContent :: Template -> [FilePath] -> Either ProcessingFailure Text
 generateIndexContent t notes =
-    substituteValue t (object [ "notes" ~> map mk notes ])
-    where mk n = object [ "path" ~> n ]
+    let v = object [ "notes" ~> map (\x -> object [ "path" ~> x ]) notes ]
+     in case checkedSubstituteValue t v of
+      ([], t) -> Right t
+      (e, _)  -> Left IndexCreationFailure

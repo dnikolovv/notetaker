@@ -10,6 +10,7 @@ import Processor.Note (Note)
 import Processor.Types (EmailAddress)
 import Processor.IndexFile (IndexTemplate)
 
+-- | Configuration record for a note processor.
 data ProcessorConfig = ProcessorConfig {
   -- | On which email address should this processor listen?
   incomingAddress :: EmailAddress

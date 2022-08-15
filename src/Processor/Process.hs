@@ -6,6 +6,7 @@ module Processor.Process (
 ) where
 
 import Control.Monad.Except (ExceptT (..), withExceptT)
+import Control.Monad.Trans.Except (except)
 import Control.Monad.IO.Class (liftIO)
 import Control.Exception (try)
 import Data.Functor ((<&>))
@@ -14,24 +15,22 @@ import Data.Either.Combinators (mapBoth)
 import qualified Data.Text.IO as TextIO
 
 import Processor.Config (ProcessorConfig (..))
-import Processor.Note (Note (..), NoteProcessor)
+import Processor.Note (Note (..))
 import Processor.Errors (ProcessingFailure (..))
 import Processor.IndexFile (generateIndexContent, compileIndexFile)
+import Processor.Types (Processor)
 
 import System.Directory (listDirectory, createDirectoryIfMissing, getCurrentDirectory, doesFileExist)
 import System.FilePath.Posix ((</>), takeExtension, dropExtension)
 
-type Processor = ExceptT ProcessingFailure IO
-
 outputDir = getCurrentDirectory
 
-useConfig :: ProcessorConfig -> NoteProcessor
+useConfig :: ProcessorConfig -> Note -> Processor ()
 useConfig c n =
     writeNote n >>= \notefile -> do
       writeIndexFile notefile
-      return notefile
   where
-    writeNote :: NoteProcessor
+    writeNote :: Note -> Processor FilePath
     writeNote n = do
       file <- liftIO . getNonconflictingPathForFile $ n
       ExceptT $ (try (TextIO.writeFile file . noteContents $ n) :: IO (Either IOError ()))
@@ -59,8 +58,9 @@ useConfig c n =
                     $ compileIndexFile (indexTemplate c)
       let content = generateIndexContent template noteFiles
           indexFP = cwd </> destinationDirectory c </> indexFile c
-      liftIO . putStrLn $ "writing index file to " ++ indexFP ++ " with notes " ++ show noteFiles
-      ExceptT $ (try (TextIO.writeFile indexFP content) :: IO (Either IOError ()))
+
+      except content >>= \c ->
+        ExceptT $ (try (TextIO.writeFile indexFP c) :: IO (Either IOError ()))
         <&> mapBoth (const IndexCreationFailure) (const ())
 
 initConfigs :: [ProcessorConfig] -> ExceptT IOError IO [()]
@@ -69,7 +69,7 @@ initConfigs = mapM initConfig
                      . createDirectoryIfMissing True
                      . destinationDirectory
 
-processNote :: [ProcessorConfig] -> NoteProcessor
+processNote :: [ProcessorConfig] -> Note -> Processor ()
 processNote ps n = case filter ((== noteRecipient n) . incomingAddress) ps of
                       []    -> ExceptT . return . Left $ NoMatchingProcessor
                       (x:_) -> useConfig x n
