@@ -17,7 +17,7 @@ import Data.Aeson.Types (Parser)
 import Data.ByteString.Char8 (ByteString, pack)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
-import Servant (Handler (..), err400, err500, err404, errBody)
+import Servant (Handler (..), err400, err500, err406, errBody)
 
 import Processor.Errors (ProcessingFailure (..))
 import Processor.Note (Note (..))
@@ -56,7 +56,7 @@ instance ToHandler Processor a where
                       handleError FileAccessFailure = err500 { errBody = "file access failure" }
                       handleError IndexTemplateParseFailure = err500 { errBody = "failed to parse index template" }
                       handleError IndexCreationFailure = err500 { errBody = "index creation failure" }
-                      handleError NoMatchingProcessor = err404 { errBody = "no matching processor" }
+                      handleError NoMatchingProcessor = err406 { errBody = "no matching processor" }
 
 -- | Handles incoming messages from the Mailgun routing hook.
 mailgunMessageHandler :: (Note -> Processor ()) -> MailgunEmailBody -> Handler ()
