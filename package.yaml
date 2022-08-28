@@ -22,9 +22,11 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - bytestring
+- cryptonite
 - directory
 - either
 - filepath
+- memory
 - mustache
 - mtl
 - parsec
@@ -59,3 +61,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - notetaker
+    - hspec

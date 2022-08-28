@@ -24,8 +24,10 @@ source-repository head
 
 library
   exposed-modules:
+      App
       Http.Handlers
       Http.Server
+      Log
       Processor.Config
       Processor.Errors
       Processor.IndexFile
@@ -41,9 +43,11 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , cryptonite
     , directory
     , either
     , filepath
+    , memory
     , mtl
     , mustache
     , parsec
@@ -65,9 +69,11 @@ executable notetaker-exe
       aeson
     , base >=4.7 && <5
     , bytestring
+    , cryptonite
     , directory
     , either
     , filepath
+    , memory
     , mtl
     , mustache
     , notetaker
@@ -83,6 +89,7 @@ test-suite notetaker-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Http.HandlersSpec
       Paths_notetaker
   hs-source-dirs:
       test
@@ -91,9 +98,12 @@ test-suite notetaker-test
       aeson
     , base >=4.7 && <5
     , bytestring
+    , cryptonite
     , directory
     , either
     , filepath
+    , hspec
+    , memory
     , mtl
     , mustache
     , notetaker
