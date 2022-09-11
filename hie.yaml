@@ -1,0 +1,21 @@
+cradle:
+  multi:
+    - path: "app/GenSig.hs"
+      config:
+        cradle:
+          stack:
+            component: "notetaker:exe:gensig-exe"
+    - path: "app/Main.hs"
+      config:
+        cradle:
+          stack:
+            component: "notetaker:exe:notetaker-exe"
+    - path: "src"
+      config:
+        cradle:
+          stack:
+    - path: "test"
+      config:
+        cradle:
+          stack:
+            component: "notetaker:test:notetaker-test"
