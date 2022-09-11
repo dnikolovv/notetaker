@@ -63,11 +63,8 @@ useConfig c n =
         ExceptT $ (try (TextIO.writeFile indexFP c) :: IO (Either IOError ()))
         <&> mapBoth (const IndexCreationFailure) (const ())
 
-initConfigs :: [ProcessorConfig] -> ExceptT IOError IO [()]
-initConfigs = mapM initConfig
-  where initConfig = ExceptT . try
-                     . createDirectoryIfMissing True
-                     . destinationDirectory
+initConfigs :: [ProcessorConfig] -> IO ()
+initConfigs = mapM_ $ createDirectoryIfMissing True . destinationDirectory
 
 processNote :: [ProcessorConfig] -> Note -> Processor ()
 processNote ps n = case filter ((== noteRecipient n) . incomingAddress) ps of

@@ -9,9 +9,11 @@ module Http.Handlers (
 , ValidationFailure (..)
 ) where
 
+import Prelude hiding (log)
+
 import Control.Monad (unless)
-import Control.Monad.Except (withExceptT)
-import Control.Monad.Reader (MonadReader, ask)
+import Control.Monad.Except (ExceptT (..), withExceptT, MonadError (throwError))
+import Control.Monad.Reader (MonadReader, ReaderT, ask, lift)
 import App (MailgunSigningKey (..), HasMailgunSigningKey (..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Either (either)
@@ -36,6 +38,8 @@ import Processor.Types (EmailAddress, Processor)
 import Crypto.Hash (digestFromByteString)
 import Data.ByteArray (Bytes (..))
 import Data.ByteArray.Encoding (convertFromBase, Base (Base16))
+
+import Log (log, HasLog)
 
 -- | The request body structure of a request from the Mailgun routing hook.
 data MailgunEmailBody = MailgunEmailBody {
@@ -66,19 +70,20 @@ instance FromJSON MailgunEmailBody where
             xs <- extractAttachments (c + 1) (r - 1) v
             return (BS.pack x : xs)
 
--- | Convert a Processor to a Handler via an error type morphism
-toHandler :: Processor a -> Handler a
-toHandler = Handler . withExceptT handleError
-              where handleError InvalidNote = err400 { errBody = "invalid note" }
-                    handleError FileAccessFailure = err500 { errBody = "file access failure" }
-                    handleError IndexTemplateParseFailure = err500 { errBody = "failed to parse index template" }
-                    handleError IndexCreationFailure = err500 { errBody = "index creation failure" }
-                    handleError NoMatchingProcessor = err406 { errBody = "no matching processor" }
-
--- | Handles incoming messages from the Mailgun routing hook.
-mailgunMessageHandler :: (Note -> Processor ()) -> MailgunEmailBody -> Handler ()
-mailgunMessageHandler f b =
-    liftIO (makeNoteFromBody b) >>= toHandler . f
+-- | Handles incoming messages from the Mailgun routing hook, validating the
+-- message according to the Mailgun webhook security documentation.
+mailgunMessageHandler :: ( HasLog e , HasMailgunSigningKey e)
+                      => (Note -> Processor ())
+                      -> MailgunEmailBody
+                      -> ReaderT e Processor ()
+mailgunMessageHandler f b = do
+    valid <- validateMessage b
+    note  <- liftIO $ makeNoteFromBody b
+    case valid of
+      Left e -> do
+        log $ "REJECT: " <> show e
+        throwError InvalidNote
+      Right _ -> lift . f $ note
   where
     makeNoteFromBody b = getCurrentTime <&> \t ->
       Note (_from b)
