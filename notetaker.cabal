@@ -28,6 +28,7 @@ library
       Http.Handlers
       Http.Server
       Log
+      Mailgun.Types
       Processor.Config
       Processor.Errors
       Processor.IndexFile
