@@ -28,6 +28,9 @@ library
       Http.Handlers
       Http.Server
       Log
+      Mailgun.ToNote
+      Mailgun.Types
+      Mailgun.Validate
       Processor.Config
       Processor.Errors
       Processor.IndexFile
@@ -112,7 +115,7 @@ test-suite notetaker-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Http.HandlersSpec
+      Mailgun.ValidateSpec
       Paths_notetaker
   hs-source-dirs:
       test

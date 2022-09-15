@@ -18,7 +18,8 @@ import Servant (ServerT, (:>), Handler (..), err400, err406, err500, errBody)
 import qualified Servant as S
 import Network.Wai.Handler.Warp (run)
 
-import Http.Handlers (mailgunMessageHandler, MailgunEmailBody (..), MailgunSigningKey)
+import Http.Handlers (mailgunMessageHandler)
+import Mailgun.Types (MailgunEmailBody (..))
 import Processor.Types (Processor)
 import Processor.Note (Note (Note))
 import Processor.Process (processNote)
@@ -32,6 +33,8 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Except (withExceptT)
 
 import Data.Text (unpack)
+import Data.Text.Encoding (encodeUtf8)
+import Data.ByteString.Lazy (fromStrict)
 
 type CreateNoteRoute = S.ReqBody '[S.JSON] MailgunEmailBody :> S.PostCreated '[S.JSON] ()
 type API = "mailgun" :> CreateNoteRoute
@@ -45,7 +48,7 @@ type ProcessorFactory = Note -> Processor ()
 -- | Convert a Processor to a Handler via an error type morphism
 toHandler :: Processor a -> Handler a
 toHandler = Handler . withExceptT handleError
-              where handleError InvalidNote = err400 { errBody = "invalid note" }
+              where handleError (InvalidNote e) = err400 { errBody = "invalid note: " <> (fromStrict . encodeUtf8 $ e) }
                     handleError FileAccessFailure = err500 { errBody = "file access failure" }
                     handleError IndexTemplateParseFailure = err500 { errBody = "failed to parse index template" }
                     handleError IndexCreationFailure = err500 { errBody = "index creation failure" }

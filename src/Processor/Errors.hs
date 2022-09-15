@@ -2,8 +2,10 @@ module Processor.Errors (
   ProcessingFailure (..)
 ) where
 
+import Data.Text (Text)
+
 data ProcessingFailure =
-      InvalidNote
+      InvalidNote Text
     | FileAccessFailure
     | IndexCreationFailure
     | IndexTemplateParseFailure
