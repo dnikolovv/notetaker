@@ -37,7 +37,9 @@ dependencies:
 - warp
 
 library:
-  source-dirs: src
+  source-dirs:
+  - src
+  - config
 
 executables:
   notetaker-exe:

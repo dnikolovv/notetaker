@@ -13,7 +13,7 @@ module Mailgun.Types (
 ) where
 
 -- * Domain specific imports
-import Processor.Types (EmailAddress)
+import Note.Types (EmailAddress)
 
 -- * Data types
 import Data.Aeson (FromJSON (..), (.:), withObject, Object)

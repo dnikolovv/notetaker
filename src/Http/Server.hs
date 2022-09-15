@@ -1,40 +1,33 @@
 {-# LANGUAGE OverloadedStrings, DataKinds, TypeOperators #-}
 
-{- This module provides a webserver with endpoints to which notes can be pushed.
- - Currently only a mailgun endpoint is provided. This takes the subject and
- - content of the message and processes the input adding the received date and
- - running the relevant processor.
- -}
-
 module Http.Server (
   runServer
 ) where
 
 import Prelude hiding (log)
 
-import Control.Applicative ((<*>))
-
-import Servant (ServerT, (:>), Handler (..), err400, err406, err500, errBody)
-import qualified Servant as S
-import Network.Wai.Handler.Warp (run)
-
+-- * Domain specific imports
+import App (AppM, ProcessorM, ProcessingFailure (..), AppEnv (..), HasMailgunSigningKey (getMailgunSigningKey))
 import Http.Handlers (mailgunMessageHandler)
-import Mailgun.Types (MailgunEmailBody (..))
-import Processor.Types (Processor)
-import Processor.Note (Note (Note))
-import Processor.Process (processNote)
-import Processor.Config (ProcessorConfig)
-import Processor.Errors
-
-import App (AppEnv (..), HasMailgunSigningKey (getMailgunSigningKey))
 import Log (HasLog, log)
-import Control.Monad.Reader (ReaderT (..), ask, MonadReader)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Except (withExceptT)
+import Mailgun.Types (MailgunEmailBody (..))
+import Note.Process (processNote)
+import Note.Types (Note (Note))
+import ProcessorConfig.Types (ProcessorConfig)
 
+-- * Control structures
+import Control.Applicative ((<*>))
+import Control.Monad.Except (withExceptT)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (ReaderT (..), ask, MonadReader)
+
+-- * Data types
+import Data.ByteString.Lazy (fromStrict)
 import Data.Text (unpack)
 import Data.Text.Encoding (encodeUtf8)
-import Data.ByteString.Lazy (fromStrict)
+import Network.Wai.Handler.Warp (run)
+import Servant (ServerT, (:>), Handler (..), err400, err406, err500, errBody)
+import qualified Servant as S
 
 type CreateNoteRoute = S.ReqBody '[S.JSON] MailgunEmailBody :> S.PostCreated '[S.JSON] ()
 type API = "mailgun" :> CreateNoteRoute
@@ -42,11 +35,10 @@ type API = "mailgun" :> CreateNoteRoute
 api :: S.Proxy API
 api = S.Proxy
 
-type AppM e = ReaderT e Processor
-type ProcessorFactory = Note -> Processor ()
+type ProcessorFactory = Note -> ProcessorM ()
 
 -- | Convert a Processor to a Handler via an error type morphism
-toHandler :: Processor a -> Handler a
+toHandler :: ProcessorM a -> Handler a
 toHandler = Handler . withExceptT handleError
               where handleError (InvalidNote e) = err400 { errBody = "invalid note: " <> (fromStrict . encodeUtf8 $ e) }
                     handleError FileAccessFailure = err500 { errBody = "file access failure" }

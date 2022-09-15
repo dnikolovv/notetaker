@@ -1,16 +1,10 @@
-{-| Processor.Config contains the types which hold processor configurations.
- - These are used to determine how to handle incoming emails.
- -}
-
-module Processor.Config (
+module ProcessorConfig.Types (
   ProcessorConfig (..)
 ) where
 
-import Processor.Note (Note)
-import Processor.Types (EmailAddress)
-import Processor.IndexFile (IndexTemplate)
+import Note.Types (Note, EmailAddress)
 
--- | Configuration record for a note processor.
+-- | Represents the configuration parameters for a note processor.
 data ProcessorConfig = ProcessorConfig {
   -- | On which email address should this processor listen?
   incomingAddress :: EmailAddress
@@ -19,7 +13,7 @@ data ProcessorConfig = ProcessorConfig {
   -- | How should we name the files?
 , createNoteName :: Note -> FilePath
   -- | Which template should we use to generate the index file?
-, indexTemplate :: IndexTemplate
+, indexTemplate :: FilePath
   -- | Where is the index file located?
 , indexFile :: FilePath
 }

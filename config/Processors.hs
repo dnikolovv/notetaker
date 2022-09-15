@@ -1,13 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-| All processor configurations should be linked here. -}
 
-module UserData.Processors (
+module Processors (
   processors
 ) where
 
-import Processor.Config (ProcessorConfig (..))
-import Processor.Note (Note (..))
-import Processor.IndexFile (IndexTemplate)
+import Note.Types (Note (..))
+import ProcessorConfig.Types (ProcessorConfig (..))
 import Data.Text (unpack)
 
 quickNoteProcessor = ProcessorConfig {

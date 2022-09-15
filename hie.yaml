@@ -15,6 +15,11 @@ cradle:
         cradle:
           stack:
             component: "notetaker:lib"
+    - path: "config"
+      config:
+        cradle:
+          stack:
+            component: "notetaker:lib"
     - path: "test"
       config:
         cradle:

@@ -27,21 +27,23 @@ library
       App
       Http.Handlers
       Http.Server
+      IndexFile.Generate
+      IndexFile.WriteToFile
       Log
       Mailgun.ToNote
       Mailgun.Types
       Mailgun.Validate
-      Processor.Config
-      Processor.Errors
-      Processor.IndexFile
-      Processor.Note
-      Processor.Process
-      Processor.Types
-      UserData.Processors
+      Note.Process
+      Note.Types
+      Note.WriteToFile
+      ProcessorConfig.Init
+      ProcessorConfig.Types
+      Processors
   other-modules:
       Paths_notetaker
   hs-source-dirs:
       src
+      config
   build-depends:
       aeson
     , base >=4.7 && <5

@@ -1,17 +1,21 @@
 module App (
-  AppEnv (..)
+  AppM
+, ProcessorM
+, AppEnv (..)
 , HasMailgunSigningKey (..)
-, HasLog (..)
 , MailgunSigningKey (..)
-, Logger
+, ProcessingFailure (..)
 ) where
 
-import Data.Text (Text)
+import Log (Logger, HasLog (..))
 
+import Data.Text (Text)
 import Control.Monad.Reader (ReaderT (..), MonadReader (ask))
 import Control.Monad.Except (ExceptT (..), withExceptT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Log (Logger, HasLog (..))
+
+type ProcessorM = ExceptT ProcessingFailure IO
+type AppM e = ReaderT e ProcessorM
 
 newtype MailgunSigningKey = MailgunSigningKey Text
   deriving Show
@@ -32,3 +36,11 @@ instance HasMailgunSigningKey AppEnv where
 
 instance HasLog AppEnv where
   getLog = _log
+
+data ProcessingFailure =
+      InvalidNote Text
+    | FileAccessFailure
+    | IndexCreationFailure
+    | IndexTemplateParseFailure
+    | NoMatchingProcessor
+  deriving (Show, Eq)

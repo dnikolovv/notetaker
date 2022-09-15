@@ -2,18 +2,17 @@
 
 module Main where
 
-import Prelude hiding (log)
-import Http.Server (runServer)
-import UserData.Processors (processors)
-import Processor.Process (initConfigs)
-import Processor.Config (ProcessorConfig)
-import Data.Text (pack)
-import System.Environment (getEnv)
-
 import App (AppEnv (..), MailgunSigningKey (..))
-import Log (log, HasLog)
-import Control.Monad.Reader (MonadReader, runReaderT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (MonadReader, runReaderT)
+import Data.Text (pack)
+import Http.Server (runServer)
+import Log (HasLog, log)
+import ProcessorConfig.Init (initConfigs)
+import ProcessorConfig.Types (ProcessorConfig)
+import Processors (processors)
+import System.Environment (getEnv)
+import Prelude hiding (log)
 
 printErr :: (MonadIO m, MonadReader e m, HasLog e) => IOError -> m ()
 printErr = log . ("Error configuring processors: " <>) . show

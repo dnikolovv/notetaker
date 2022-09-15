@@ -1,27 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{-| Processor.IndexFile contains all the logic for handling the generation of
- - index files, which link to all the notes in a given configuration.
- -}
-
-module Processor.IndexFile (
-  IndexTemplate
-, compileIndexFile
+module IndexFile.Generate (
+  compileIndexFile
 , generateIndexContent
 ) where
 
+-- * Domain specific imports
+import App (ProcessingFailure (..))
+
+-- * Data types
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Except (ExceptT (..))
 import Data.Text (Text)
+import System.Directory (getCurrentDirectory)
 import Text.Mustache (Template, object, (~>))
 import Text.Mustache.Compile (automaticCompile)
 import Text.Mustache.Render (checkedSubstituteValue)
 import Text.Parsec (ParseError)
-import Control.Monad.Trans.Except (ExceptT (..))
-import Control.Monad.IO.Class (liftIO)
-import System.Directory (getCurrentDirectory)
-
-import Processor.Errors (ProcessingFailure (..))
-
-type IndexTemplate = FilePath
 
 -- | Compile index file data from a template in "./templates" using
 -- "./templates/partials" for partials.

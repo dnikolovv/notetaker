@@ -12,7 +12,7 @@ import Mailgun.Types (
   , MailgunEmailBody (..)
   , messageBody
   )
-import Processor.Note (Note (..))
+import Note.Types (Note (..))
 
 -- * Control structures
 import Data.Functor ((<&>))
