@@ -1,6 +1,7 @@
-module ProcessorConfig.Init (
-  initConfigs
-) where
+module ProcessorConfig.Init
+  ( initConfigs,
+  )
+where
 
 import ProcessorConfig.Types (ProcessorConfig (..))
 import System.Directory (createDirectoryIfMissing)

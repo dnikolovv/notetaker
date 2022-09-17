@@ -1,17 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Note.WriteToFile (
-  writeNote
-) where
+module Note.WriteToFile
+  ( writeNote,
+  )
+where
 
--- * Domain specific imports
-import Note.Types (Note (..))
-
--- * File writing functions etc.
 import Control.Monad.IO.Class (liftIO)
-import System.Directory (doesFileExist)
-import System.FilePath.Posix ((</>), takeExtension, dropExtension)
 import qualified Data.Text.IO as TextIO
+import Note.Types (Note (..))
+import System.Directory (doesFileExist)
+import System.FilePath.Posix (dropExtension, takeExtension, (</>))
 
 -- | Writes a note to a file, adding a `(n)` suffix in case the file
 -- already exists. This does not capture potential IO errors, leaving
@@ -27,10 +25,11 @@ getNonconflictingPathForFile path = do
   let basename = dropExtension path
       extension = takeExtension path
   findGoodPath basename extension 0
-  where findGoodPath b e i =
-          let newPath = fname b e i
-           in doesFileExist newPath >>= \case
-              True -> findGoodPath b e (i + 1)
-              False -> return newPath
-        fname b e 0 = b ++ e
-        fname b e i = b ++ " (" ++ show i ++ ")" ++ e
+  where
+    findGoodPath b e i =
+      let newPath = fname b e i
+       in doesFileExist newPath >>= \case
+            True -> findGoodPath b e (i + 1)
+            False -> return newPath
+    fname b e 0 = b ++ e
+    fname b e i = b ++ " (" ++ show i ++ ")" ++ e

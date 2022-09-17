@@ -1,16 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Main where
-import System.Environment (getArgs)
 
+import Crypto.Hash.Algorithms (SHA256)
+import Crypto.MAC.HMAC (HMAC (..), hmac)
 import Data.Functor ((<&>))
 import Data.Text (Text, pack)
 import Data.Text.Encoding (encodeUtf8)
-
-import Data.Time.Clock.POSIX (getPOSIXTime)
 import Data.Time.Clock (nominalDiffTimeToSeconds)
-import Crypto.MAC.HMAC (hmac, HMAC (..))
-import Crypto.Hash.Algorithms (SHA256)
+import Data.Time.Clock.POSIX (getPOSIXTime)
+import System.Environment (getArgs)
 
 getNowInSeconds :: IO Integer
 getNowInSeconds = getPOSIXTime <&> floor . nominalDiffTimeToSeconds
@@ -25,15 +24,18 @@ printUsage = do
 
 doSigGen :: Text -> Text -> IO ()
 doSigGen key token = do
-    now <- getNowInSeconds
-    let signature = hmacGetDigest (hmac (encodeUtf8 key)
-                                        (encodeUtf8 $ (pack . show $ now) <> token)
-                                        :: HMAC SHA256)
-    putStrLn $ show now <> ":" <> show signature
-
+  now <- getNowInSeconds
+  let signature =
+        hmacGetDigest
+          ( hmac
+              (encodeUtf8 key)
+              (encodeUtf8 $ (pack . show $ now) <> token) ::
+              HMAC SHA256
+          )
+  putStrLn $ show now <> ":" <> show signature
 
 main :: IO ()
 main = do
   getArgs >>= \case
     [key, token] -> doSigGen (pack key) (pack token)
-    _                 -> printUsage
+    _ -> printUsage

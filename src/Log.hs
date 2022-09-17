@@ -1,14 +1,15 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Log (
-  Logger
-, HasLog (..)
-, log
-) where
+module Log
+  ( Logger,
+    HasLog (..),
+    log,
+  )
+where
 
-import Prelude hiding (log)
-import Control.Monad.Reader (MonadReader, ask)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader (MonadReader, ask)
+import Prelude hiding (log)
 
 -- | General logging function type signature
 type Logger = String -> IO ()

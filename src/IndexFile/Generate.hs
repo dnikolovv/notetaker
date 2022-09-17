@@ -1,14 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module IndexFile.Generate (
-  compileIndexFile
-, generateIndexContent
-) where
+module IndexFile.Generate
+  ( compileIndexFile,
+    generateIndexContent,
+  )
+where
 
--- * Domain specific imports
 import App (ProcessingFailure (..))
-
--- * Data types
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT (..))
 import Data.Text (Text)
@@ -22,14 +20,16 @@ import Text.Parsec (ParseError)
 -- "./templates/partials" for partials.
 compileIndexFile :: FilePath -> ExceptT ParseError IO Template
 compileIndexFile inputFile = do
-    cwd <- liftIO getCurrentDirectory
-    ExceptT $ automaticCompile [cwd ++ "/templates/partials"]
-                               (cwd ++ "/templates/" ++ inputFile)
+  cwd <- liftIO getCurrentDirectory
+  ExceptT $
+    automaticCompile
+      [cwd ++ "/templates/partials"]
+      (cwd ++ "/templates/" ++ inputFile)
 
 -- | Generate index content from index file data and a list of notes
 generateIndexContent :: Template -> [FilePath] -> Either ProcessingFailure Text
 generateIndexContent t notes =
-    let v = object [ "notes" ~> map (\x -> object [ "path" ~> x ]) notes ]
-     in case checkedSubstituteValue t v of
-      ([], t) -> Right t
-      (e, _)  -> Left IndexCreationFailure
+  let v = object ["notes" ~> map (\x -> object ["path" ~> x]) notes]
+   in case checkedSubstituteValue t v of
+        ([], t) -> Right t
+        (e, _) -> Left IndexCreationFailure

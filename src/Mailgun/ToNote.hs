@@ -1,24 +1,20 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Mailgun.ToNote (
-  mkNote
-) where
+module Mailgun.ToNote
+  ( mkNote,
+  )
+where
 
--- * Domain specific imports
-import Mailgun.Types (
-    MailgunMessage
-  , MessageState (Validated)
-  , MailgunEmailBody (..)
-  , messageBody
+import Data.Functor ((<&>))
+import Data.Time.Clock (UTCTime)
+import Mailgun.Types
+  ( MailgunEmailBody (..),
+    MailgunMessage,
+    MessageState (Validated),
+    messageBody,
   )
 import Note.Types (Note (..))
-
--- * Control structures
-import Data.Functor ((<&>))
-
--- * Data types
-import Data.Time.Clock (UTCTime)
 
 mkNote :: UTCTime -> MailgunMessage 'Validated -> Note
 mkNote t (messageBody -> b) =

@@ -1,29 +1,30 @@
-module App (
-  AppM
-, ProcessorM
-, AppEnv (..)
-, HasMailgunSigningKey (..)
-, MailgunSigningKey (..)
-, ProcessingFailure (..)
-) where
+module App
+  ( AppM,
+    ProcessorM,
+    AppEnv (..),
+    HasMailgunSigningKey (..),
+    MailgunSigningKey (..),
+    ProcessingFailure (..),
+  )
+where
 
-import Log (Logger, HasLog (..))
-
-import Data.Text (Text)
-import Control.Monad.Reader (ReaderT (..), MonadReader (ask))
 import Control.Monad.Except (ExceptT (..), withExceptT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Reader (MonadReader (ask), ReaderT (..))
+import Data.Text (Text)
+import Log (HasLog (..), Logger)
 
 type ProcessorM = ExceptT ProcessingFailure IO
+
 type AppM e = ReaderT e ProcessorM
 
 newtype MailgunSigningKey = MailgunSigningKey Text
-  deriving Show
+  deriving (Show)
 
-data AppEnv = AppEnv {
-  _mailgunSigningKey :: MailgunSigningKey
-, _log :: Logger
-}
+data AppEnv = AppEnv
+  { _mailgunSigningKey :: MailgunSigningKey,
+    _log :: Logger
+  }
 
 class HasMailgunSigningKey env where
   getMailgunSigningKey :: env -> MailgunSigningKey
@@ -37,10 +38,10 @@ instance HasMailgunSigningKey AppEnv where
 instance HasLog AppEnv where
   getLog = _log
 
-data ProcessingFailure =
-      InvalidNote Text
-    | FileAccessFailure
-    | IndexCreationFailure
-    | IndexTemplateParseFailure
-    | NoMatchingProcessor
+data ProcessingFailure
+  = InvalidNote Text
+  | FileAccessFailure
+  | IndexCreationFailure
+  | IndexTemplateParseFailure
+  | NoMatchingProcessor
   deriving (Show, Eq)
