@@ -3,7 +3,7 @@ module Note.Process
   )
 where
 
-import App (ProcessingFailure (..), ProcessorM)
+import App (ProcessingFailure (..), AppM)
 import Control.Monad.Except (ExceptT (ExceptT), withExceptT)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor ((<&>))
@@ -14,20 +14,19 @@ import Note.WriteToFile (writeNote)
 import ProcessorConfig.Types (ProcessorConfig (..))
 import System.Directory (createDirectoryIfMissing, doesFileExist, getCurrentDirectory, listDirectory)
 import System.FilePath.Posix ((</>))
+import Control.Monad.Catch (MonadThrow(..))
 
-processNote :: [ProcessorConfig] -> Note -> ProcessorM ()
+processNote :: [ProcessorConfig] -> Note -> AppM ()
 processNote configs note =
   case filter ((== noteRecipient note) . incomingAddress) configs of
-    [] -> ExceptT . return . Left $ NoMatchingProcessor
+    [] -> throwM NoMatchingProcessor
     (config : _) -> processWithConfig config note
 
-processWithConfig :: ProcessorConfig -> Note -> ProcessorM ()
+processWithConfig :: ProcessorConfig -> Note -> AppM ()
 processWithConfig config note = do
   rootDir <-
     liftIO getCurrentDirectory <&> \d ->
       d </> destinationDirectory config
-  template <-
-    withExceptT (const IndexTemplateParseFailure) $
-      compileIndexFile (indexTemplate config)
-  liftIO $ writeNote note (rootDir </> createNoteName config note)
+  template <- compileIndexFile (indexTemplate config)
+  writeNote note (rootDir </> createNoteName config note)
   writeIndexFile rootDir (indexFile config) template

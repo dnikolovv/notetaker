@@ -35,11 +35,16 @@ dependencies:
 - time
 - transformers
 - warp
+- exceptions
+- generic-lens
 
 library:
   source-dirs:
   - src
   - config
+
+default-extensions:
+  - ImportQualifiedPost
 
 executables:
   notetaker-exe:

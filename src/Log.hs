@@ -1,26 +1,29 @@
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Log
-  ( Logger,
+  ( Logger (..),
+    Log,
     HasLog (..),
-    log,
   )
 where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader, ask)
+import Data.Text (Text)
 import Prelude hiding (log)
 
 -- | General logging function type signature
-type Logger = String -> IO ()
+type Log = Text -> IO ()
+
+-- You'd probably be better off using an existing logging library
+-- such as katip or monad-logger
+class Logger m where
+  log :: Text -> m ()
 
 -- | Captures any type which has a logging function in it
 class HasLog a where
-  getLog :: a -> Logger
+  getLog :: a -> Log
 
-instance HasLog Logger where
+instance HasLog Log where
   getLog = id
-
--- | Convenience function to call a logger within the right monadic context
-log :: (MonadReader env m, MonadIO m, HasLog env) => String -> m ()
-log msg = ask >>= \e -> liftIO . getLog e $ msg

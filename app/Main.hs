@@ -2,33 +2,32 @@
 
 module Main where
 
-import App (AppEnv (..), MailgunSigningKey (..))
+import App (AppEnv (..), appMToIO, MailgunSigningKey (..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (MonadReader, runReaderT)
-import Data.Text (pack)
+import Data.Text (Text, pack, unpack)
 import Http.Server (runServer)
-import Log (HasLog, log)
+import Log (Logger (..))
 import ProcessorConfig.Init (initConfigs)
 import ProcessorConfig.Types (ProcessorConfig)
 import Processors (processors)
 import System.Environment (getEnv)
 import Prelude hiding (log)
 
-printErr :: (MonadIO m, MonadReader e m, HasLog e) => IOError -> m ()
-printErr = log . ("Error configuring processors: " <>) . show
+printErr :: (Logger m, MonadIO m) => IOError -> m ()
+printErr = log . ("Error configuring processors: " <>) . pack . show
 
-initAll :: (HasLog e, MonadReader e m, MonadIO m) => [ProcessorConfig] -> m ()
+initAll :: (Logger m, MonadIO m) => [ProcessorConfig] -> m ()
 initAll ps = do
-  log $ "Initialising " <> (show . length $ ps) <> " processors"
+  log $ "Initialising " <> (pack . show . length $ ps) <> " processors"
   _ <- liftIO (initConfigs ps)
   log "-> Done!"
 
-logger :: String -> IO ()
-logger = putStrLn
+logger :: Text -> IO ()
+logger = putStrLn . unpack
 
 main :: IO ()
 main = do
   env <- flip AppEnv logger . MailgunSigningKey . pack <$> getEnv "MAILGUN_SIGNING_KEY"
-  _ <- runReaderT (initAll processors) env
+  _ <- appMToIO env (initAll processors)
   _ <- logger "Starting server"
   runServer processors env

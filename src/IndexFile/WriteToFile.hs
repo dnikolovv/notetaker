@@ -3,7 +3,7 @@ module IndexFile.WriteToFile
   )
 where
 
-import App (ProcessorM)
+import App (AppM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (ExceptT, except)
 import Data.Functor ((<&>))
@@ -12,13 +12,15 @@ import IndexFile.Generate (generateIndexContent)
 import System.Directory (listDirectory)
 import System.FilePath.Posix ((</>))
 import Text.Mustache.Types (Template)
+import Control.Monad.Catch (MonadThrow(..))
 
 writeIndexFile ::
   FilePath ->
   FilePath ->
   Template ->
-  ProcessorM ()
+  AppM ()
 writeIndexFile rootDir filename template = do
   allNotes <- liftIO $ listDirectory rootDir <&> filter (/= filename)
-  except (generateIndexContent template allNotes)
-    >>= liftIO . TextIO.writeFile (rootDir </> filename)
+  case generateIndexContent template allNotes of
+    Right contents -> liftIO . TextIO.writeFile (rootDir </> filename) $ contents
+    Left err -> throwM err

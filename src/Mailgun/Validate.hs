@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Mailgun.Validate
   ( validateMessage,
@@ -10,11 +12,11 @@ module Mailgun.Validate
 where
 
 import App
-  ( HasMailgunSigningKey,
+  ( Has (getThe),
     MailgunSigningKey (..),
-    getMailgunSigningKey,
   )
 import Control.Monad (unless)
+import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader.Class (MonadReader (ask))
 import Crypto.Hash (SHA256, digestFromByteString)
@@ -33,6 +35,7 @@ import Mailgun.Types
     MailgunMessage (..),
     MessageState (Validated),
   )
+import Utilities (liftEither)
 
 -- | Different reasons the message validation might fail.
 data MessageValidationFailure
@@ -58,11 +61,12 @@ explainValidationError = \case
 --
 --  See https://documentation.mailgun.com/en/latest/user_manual.html#webhooks-1.
 validateMessage ::
-  (MonadReader e m, MonadIO m, HasMailgunSigningKey e) =>
+  Has MailgunSigningKey m =>
+  MonadIO m =>
   MailgunEmailBody ->
   m (Either MessageValidationFailure (MailgunMessage 'Validated))
 validateMessage m = do
-  (MailgunSigningKey k) <- ask <&> getMailgunSigningKey
+  (MailgunSigningKey k) <- getThe @MailgunSigningKey
   let code =
         hmacGetDigest
           ( hmac
@@ -71,13 +75,16 @@ validateMessage m = do
               HMAC SHA256
           )
   now <- liftIO getPOSIXTime <&> floor . nominalDiffTimeToSeconds
-  return $ do
-    sig <- decodeSig . _signature $ m
-    digest <- maybeToRight DigestFailure $ digestFromByteString sig
-    unless (digest == code) (Left CodeMatchFailure)
-    unless (abs (now - _timestamp m) < validationWindowInSeconds) $ Left TimeMatchFailure
-    Right $ ValidatedMessage m
+
+  pure $ checkSignature now code
   where
+    checkSignature now code = do
+      sig <- decodeSig . _signature $ m
+      digest <- maybeToRight DigestFailure $ digestFromByteString sig
+      unless (digest == code) (Left CodeMatchFailure)
+      unless (abs (now - _timestamp m) < validationWindowInSeconds) $ Left TimeMatchFailure
+      Right $ ValidatedMessage m
+
     validationWindowInSeconds = 600 -- 10 minutes
     decodeSig :: Text -> Either MessageValidationFailure Bytes
     decodeSig =
