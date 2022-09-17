@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeApplications #-}
@@ -60,6 +61,10 @@ data AppEnv = AppEnv
 class Has thing m where
   getThe :: m thing
   default getThe :: HasType thing env => MonadReader env m => m thing
+  getThe = asks (view typed)
+
+-- Used by the test suite
+instance (HasType thing env) => Has thing (ReaderT env IO) where
   getThe = asks (view typed)
 
 data ProcessingFailure
